@@ -1,5 +1,20 @@
 import streamlit as st
 from PIL import Image
+import requests
+import base64
+import os
+
+def get_binary_file_downloader_html(bin_file, file_label='File'):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    bin_str = base64.b64encode(data).decode()
+    href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">[ Download Image ]</a>'
+    return href
+
+
+################################################################################
+# main()
+################################################################################
 
 
 def main():
@@ -20,6 +35,34 @@ def main():
 		image = rgb_im.save("saved_image.jpg")
 		image_path = "saved_image.jpg"
 		st.image(image1)
+
+	if st.button("Colorize"):
+		if image_file is not None:
+			st.warning("Please Wait⌛....Artistic Work in progress 🎨🎭👨‍🎨 ")
+			r = requests.post(
+			    "https://api.deepai.org/api/colorizer",
+			    files={
+			        'image': open('saved_image.jpg', 'rb'),
+			    },
+			    headers={'api-key': 'aa48ee59-f392-4783-b1ac-ab410534ca61'}
+			)
+
+			color_image_url = r.json()["output_url"]
+
+			img_data = requests.get(color_image_url).content
+			with open('color_image.jpg', 'wb') as handler:
+				handler.write(img_data)
+			st.success("Image Colorization Successfull 🙌🥳🎉")
+			color_image = Image.open('color_image.jpg')
+
+			st.subheader("Colorized Image")
+			st.image(color_image)
+
+			st.markdown(get_binary_file_downloader_html('color_image.jpg', 'Picture'), unsafe_allow_html=True)
+
+		else:
+			st.error("Please Upload Image!!!")
+
 
 if __name__== "__main__":
 	main()
